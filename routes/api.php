@@ -15,4 +15,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('users', [UserController::class, 'index']);
+Route::resource('users', UserController::class);
