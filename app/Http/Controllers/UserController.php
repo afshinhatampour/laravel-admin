@@ -6,10 +6,12 @@ use App\Http\Requests\UpdateInfoRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UserCreateRequest;
 use App\Http\Requests\UserUpdateRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,20 +19,20 @@ use Symfony\Component\HttpFoundation\Response;
 class UserController extends Controller
 {
     /**
-     * @return JsonResponse
+     * @return AnonymousResourceCollection
      */
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
-        return response()->json(User::paginate(20), Response::HTTP_OK);
+        return UserResource::collection(User::paginate());
     }
 
     /**
      * @param User $user
-     * @return JsonResponse
+     * @return UserResource
      */
-    public function show(User $user): JsonResponse
+    public function show(User $user): UserResource
     {
-        return response()->json($user, Response::HTTP_OK);
+        return new UserResource($user);
     }
 
     /**
@@ -40,10 +42,10 @@ class UserController extends Controller
     public function store(UserCreateRequest $request): JsonResponse
     {
         $user = User::query()->create(
-            $request->only('first_name', 'last_name', 'email') +
+            $request->only('first_name', 'last_name', 'email', 'role_id') +
             ['password' => Hash::make('1234'),]
         );
-        return response()->json($user, Response::HTTP_CREATED);
+        return response()->json(new UserResource($user), Response::HTTP_CREATED);
     }
 
     /**
@@ -53,9 +55,9 @@ class UserController extends Controller
      */
     public function update(UserUpdateRequest $request, User $user): JsonResponse
     {
-        $user->update($request->only('first_name', 'last_name', 'email'));
+        $user->update($request->only('first_name', 'last_name', 'email', 'role_id'));
 
-        return response()->json($user, Response::HTTP_ACCEPTED);
+        return response()->json(new UserResource($user), Response::HTTP_ACCEPTED);
     }
 
     /**
@@ -69,11 +71,11 @@ class UserController extends Controller
     }
 
     /**
-     * @return Authenticatable|null
+     * @return UserResource
      */
-    public function user(): ?Authenticatable
+    public function user(): UserResource
     {
-        return Auth::user();
+        return new UserResource(Auth::user());
     }
 
     /**
@@ -84,7 +86,7 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $user->update($request->only('first_name', 'last_name', 'email'));
-        return response()->json($user, Response::HTTP_ACCEPTED);
+        return response()->json(new UserResource($user), Response::HTTP_ACCEPTED);
     }
 
     /**
@@ -97,6 +99,6 @@ class UserController extends Controller
         $user->update([
             'password' => Hash::make($request->get('password')),
         ]);
-        return response()->json($user, Response::HTTP_ACCEPTED);
+        return response()->json(new UserResource($user), Response::HTTP_ACCEPTED);
     }
 }
